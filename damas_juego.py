@@ -1,5 +1,5 @@
-COLOR_BLANCA = "\033[97m"   # blanco 
-COLOR_ROJA = "\033[91m"     # rojo 
+COLOR_BLANCA = "\033[97m"   
+COLOR_ROJA = "\033[91m"     
 COLOR_RESET = "\033[0m"
 
 tablero = []
@@ -59,8 +59,12 @@ def mostrar_tablero():
                     color = COLOR_BLANCA
                 else:
                     color = COLOR_ROJA
-                celda = color + nombre + COLOR_RESET
-                espacios = 6 - len(nombre)
+                if pieza == "B" or pieza == "R":
+                    texto_nombre = nombre.upper()
+                else:
+                    texto_nombre = nombre
+                celda = color + texto_nombre + COLOR_RESET
+                espacios = 6 - len(texto_nombre)
                 linea = linea + celda + " " * espacios
         print(linea)
 
@@ -296,71 +300,80 @@ def obtener_opciones_captura(fila, columna, jugador):
     return opciones
 
 
-def elegir_por_sentido(opciones):
-    if len(opciones) == 1:
-        return opciones[0]
-
-    while True:
-        respuesta = input("Esa dama puede moverse adelante o atras. Escribe 'a' (adelante) o 't' (atras): ")
-        respuesta = respuesta.strip().lower()
-
-        if respuesta != "a" and respuesta != "t":
-            print("Respuesta invalida. Escribe 'a' o 't'.")
-            continue
-
-        if respuesta == "a":
-            sentido_elegido = "adelante"
-        else:
-            sentido_elegido = "atras"
-
-        filtradas = []
-        for opcion in opciones:
-            if opcion["sentido"] == sentido_elegido:
-                filtradas.append(opcion)
-
-        if len(filtradas) == 0:
-            print("No hay movimiento disponible en ese sentido. Intenta de nuevo.")
-            continue
-
-        return filtradas[0]
+def anunciar_movimiento_automatico(opcion):
+    if opcion["lado"] == "d":
+        print("Esa ficha solo puede moverse hacia la derecha, se movera automaticamente.")
+    else:
+        print("Esa ficha solo puede moverse hacia la izquierda, se movera automaticamente.")
 
 
 def elegir_movimiento(opciones):
+    # Si solo hay una opcion en total, no hay nada que preguntar.
     if len(opciones) == 1:
-        if opciones[0]["lado"] == "d":
-            print("Esa ficha solo puede moverse hacia la derecha, se movera automaticamente.")
-        else:
-            print("Esa ficha solo puede moverse hacia la izquierda, se movera automaticamente.")
+        anunciar_movimiento_automatico(opciones[0])
         return opciones[0]
 
-    lados_disponibles = set()
+    # Si la ficha es una dama y puede moverse tanto hacia adelante como
+    # hacia atras, primero se pregunta el sentido.
+    sentidos_disponibles = set()
     for opcion in opciones:
-        lados_disponibles.add(opcion["lado"])
+        sentidos_disponibles.add(opcion["sentido"])
 
-    if len(lados_disponibles) == 1:
-        return elegir_por_sentido(opciones)
+    if len(sentidos_disponibles) > 1:
+        while True:
+            respuesta = input("Quieres mover la dama hacia adelante o hacia atras? Escribe 'w' (adelante) o 's' (atras): ")
+            respuesta = respuesta.strip().lower()
+
+            if respuesta != "w" and respuesta != "s":
+                print("Respuesta invalida. Escribe 'w' o 's'.")
+                continue
+
+            if respuesta == "w":
+                sentido_elegido = "adelante"
+            else:
+                sentido_elegido = "atras"
+
+            filtradas = []
+            for opcion in opciones:
+                if opcion["sentido"] == sentido_elegido:
+                    filtradas.append(opcion)
+
+            if len(filtradas) == 0:
+                print("No hay movimiento disponible en ese sentido. Intenta de nuevo.")
+                continue
+
+            opciones = filtradas
+            break
+
+    # Una vez resuelto el sentido (o si no hacia falta), si solo queda
+    # una opcion se mueve sola; si quedan dos, se pregunta el lado.
+    if len(opciones) == 1:
+        anunciar_movimiento_automatico(opciones[0])
+        return opciones[0]
 
     while True:
-        respuesta = input("Hacia donde quieres mover la ficha? Escribe 'd' (derecha) o 'i' (izquierda): ")
+        respuesta = input("Hacia donde quieres mover la ficha? Escribe 'd' (derecha) o 'a' (izquierda): ")
         respuesta = respuesta.strip().lower()
 
-        if respuesta != "d" and respuesta != "i":
-            print("Respuesta invalida. Escribe 'd' o 'i'.")
+        if respuesta != "d" and respuesta != "a":
+            print("Respuesta invalida. Escribe 'd' o 'a'.")
             continue
+
+        if respuesta == "a":
+            lado_elegido = "i"
+        else:
+            lado_elegido = "d"
 
         filtradas = []
         for opcion in opciones:
-            if opcion["lado"] == respuesta:
+            if opcion["lado"] == lado_elegido:
                 filtradas.append(opcion)
 
         if len(filtradas) == 0:
             print("No hay movimiento disponible hacia ese lado. Intenta de nuevo.")
             continue
 
-        if len(filtradas) == 1:
-            return filtradas[0]
-
-        return elegir_por_sentido(filtradas)
+        return filtradas[0]
 
 
 def leer_nombre_ficha(mensaje, jugador):
